@@ -1,28 +1,19 @@
 sWelcome.LastError = sWelcome.LastError or ""
 sWelcome.IsOpen = sWelcome.IsOpen or false
 
-local intCinimaticIndex = 1
-local intCinimaticLastIndex = 0
-local boolStartedAng = false
-local vecPosCinimatic = sWelcome.Cinimatic[ intCinimaticIndex ]['StartPos']
-local angPosCinimatic = sWelcome.Cinimatic[ intCinimaticIndex ]['StartAngle']
-
 -- Sizes
 local scrW = ScrW()
 local scrH = ScrH()
 
-local function scaleThis( int )
-    if scrH > 720 then return int end
-	return math.ceil( int / 1080 * scrH )
+function sWelcome.Scale( intSize, strAxis )
+    if strAxis == "x" then
+        intSize = scrW * ( intSize / 1920 )
+    elseif strAxis == "y" or strAxis == nil then
+        intSize = scrH * ( intSize / 1080 )
+    end
+    
+    return math.Round( intSize )
 end
-
-local size100 = scaleThis( 100 )
-local size120 = scaleThis( 120 )
-local size160 = scaleThis( 160 )
-local size180 = scaleThis( 180 )
-local size200 = scaleThis( 200 )
-local size230 = scaleThis( 230 )
-local size524 = scaleThis( 524 )
 
 -- Colors
 local colWhite = Color( 255, 255, 255 )
@@ -33,27 +24,39 @@ local colOrange = Color( 255, 184, 176 )
 local colOrangeH = Color( 255, 184, 176, 200 )
 
 -- Fonts
-surface.CreateFont( "sWelcome:48:B_shadow", { font = "QUARTZO", extended = false, size = 105, weight = 800, blursize = 3 } )
-surface.CreateFont( "sWelcome:48:B", { font = "QUARTZO", extended = false, size = 105, weight = 800, } )
-surface.CreateFont( "sWelcome:32:B", { font = "QUARTZO", extended = false, size = 32, weight = 800, } )
-surface.CreateFont( "sWelcome:30:B", { font = "QUARTZO", extended = false, size = 30, weight = 800, } )
-surface.CreateFont( "sWelcome:24:B", { font = "QUARTZO", extended = false, size = 24, weight = 800, } )
-surface.CreateFont( "sWelcome:24:A", { font = "QUARTZO", extended = false, size = 29, weight = 800, } )
+local cachedFonts = {}
+
+function sWelcome:Font( intSize, boolShadow )
+    intSize = intSize or 13
+    
+    local strIdentifier = "sWelcome:" .. intSize .. ( boolShadow and "S" or "" )
+    
+    if cachedFonts[ strIdentifier ] then return strIdentifier end
+
+    surface.CreateFont( strIdentifier, {
+        font = "QUARTZO",
+        size = self.Scale( intSize, "y" ),
+        weight = 800,
+        blursize = boolShadow and 3 or 0
+    } )
+
+    cachedFonts[ strIdentifier ] = true
+
+    return strIdentifier
+end
 
 -- Materials
 local matBg = Material( "seefox/swelcome/background.png" )
 local matStart = Material( "seefox/swelcome/start.png" )
-local matNext = Material( "seefox/swelcome/continue.png" )
-local matDiscord = Material( "seefox/swelcome/discord.png" )
-local matBgDiscord = Material( "seefox/swelcome/bluereflect.png" )
+local matNext = Material( "seefox/swelcome/continue.png", "smooth 1" )
+local matDiscord = Material( "seefox/swelcome/discord.png", "smooth 1" )
+local matBgDiscord = Material( "seefox/swelcome/bluereflect.png", "smooth 1" )
 local matCross = Material( "seefox/swelcome/cross.png" )
 
 -- Blur
 local matBlur = Material( "pp/blurscreen" )
-local function drawBlur( panel, amount )
+function sWelcome.DrawBlur( panel, amount )
 	local x, y = panel:LocalToScreen( 0, 0 )
-
-	local scrW, scrH = ScrW(), ScrH()
 
 	surface.SetDrawColor( colWhite )
 	surface.SetMaterial( matBlur )
@@ -69,12 +72,10 @@ end
 
 -- Menu
 function sWelcome:Transition()
-    local Base = vgui.Create( "DFrame" )
+    local Base = vgui.Create( "EditablePanel" )
     Base:SetSize( scrW, scrH )
-    Base:Center()
-    Base:SetTitle('')
-    Base:SetDraggable( false )
-    Base:ShowCloseButton( false )
+    Base:CenterVertical()
+	Base:CenterHorizontal()
     Base:MakePopup()
     Base:SetAlpha( 0 )
     Base:AlphaTo( 255, 0.5, 0, function() 
@@ -91,25 +92,23 @@ function sWelcome:Transition()
     end
 
     timer.Simple( 8, function()
-        if IsValid( Base ) then
-            Base:Remove()
-        end
+        if !IsValid( Base ) then return end
+        
+        Base:Remove()
     end )
 
-    sWelcome.pTransition = Base
+    self.pTransition = Base
 end
 
-function sWelcome:Create( entNpc )
-    local Base = vgui.Create( "DFrame" )
+function sWelcome.Create( entNpc )
+    local Base = vgui.Create( "EditablePanel" )
     Base:SetSize( scrW, scrH )
-    Base:Center()
-    Base:SetTitle('')
-    Base:SetDraggable( false )
-    Base:ShowCloseButton( false )
+    Base:CenterVertical()
+	Base:CenterHorizontal()
     Base:MakePopup()
     function Base:Paint( w, h )
         if !entNpc then
-            drawBlur( self, 12 )
+            sWelcome.DrawBlur( self, 12 )
         end
     end
     function Base:OnRemove()
@@ -117,10 +116,10 @@ function sWelcome:Create( entNpc )
         sWelcome.IsOpen = false
     end
 
-    local intMsgW = scaleThis( 681 )
-    local intMsgH = scaleThis( 488 )
-    local intMsgX = Base:GetWide() / 2 - intMsgW / 2 + 20
-    local intMsgY = Base:GetTall() / 2 - intMsgH / 2 - 80
+    local intMsgW = sWelcome.Scale( 681, "x" )
+    local intMsgH = sWelcome.Scale( 488, "y" )
+    local intMsgX = Base:GetWide() / 2 - intMsgW / 2 + sWelcome.Scale( 20, "x" )
+    local intMsgY = Base:GetTall() / 2 - intMsgH / 2 - sWelcome.Scale( 80, "y" )
 
     local pContent = vgui.Create( "DPanel", Base )
     pContent:SetSize( Base:GetSize() )
@@ -134,41 +133,40 @@ function sWelcome:Create( entNpc )
         surface.DrawTexturedRect( intMsgX, intMsgY, intMsgW, intMsgH )
 
         if sWelcome.ServerLogo then
-            surface.SetDrawColor( colWhite )
             surface.SetMaterial( sWelcome.ServerLogo )
-            surface.DrawTexturedRect( w*.5, h*.25, size120, size120 )
+            surface.DrawTexturedRect( w*.5, h*.25, sWelcome.Scale( 120, "x" ), sWelcome.Scale( 120, "y" ) )
         end
 
-        draw.SimpleTextOutlined( 
-            sWelcome:Translate( "NAME" ) .. ":", 
-            "sWelcome:24:B", 
-            intMsgX + size230, 
-            intMsgY + intMsgH / 2 + 28, 
+        draw.SimpleTextOutlined(
+            sWelcome:Translate( "NAME" ) .. ":",
+            sWelcome:Font( 24 ),
+            intMsgX + sWelcome.Scale( 230, "x" ),
+            intMsgY + intMsgH / 2 + sWelcome.Scale( 28, "y" ),
             colWhite,
             2,
             0,
-            1, 
+            1,
             colBlack
         )
 
-        draw.SimpleTextOutlined( 
-            sWelcome:Translate( "SURNAME" ) .. ":", 
-            "sWelcome:24:B", 
-            intMsgX + size200 + 10, 
-            intMsgY + intMsgH / 2 + size100 + 13, 
+        draw.SimpleTextOutlined(
+            sWelcome:Translate( "SURNAME" ) .. ":",
+            sWelcome:Font( 24 ),
+            intMsgX + sWelcome.Scale( 210, "x" ),
+            intMsgY + intMsgH / 2 + sWelcome.Scale( 113, "y" ),
             colWhite,
             2,
             0,
-            1, 
+            1,
             colBlack
         )
 
         if entNpc and sWelcome.NameChangeCost > 0 then
             draw.SimpleTextOutlined( 
                 sWelcome:Translate( "COST" ) .. ": " .. DarkRP.formatMoney( sWelcome.NameChangeCost ), 
-                "sWelcome:24:B", 
-                intMsgX + size200 + scaleThis( 60 ), 
-                intMsgY + intMsgH / 2 + size160 + 13, 
+                sWelcome:Font( 24 ), 
+                intMsgX + sWelcome.Scale( 260, "x" ), 
+                intMsgY + intMsgH / 2 + sWelcome.Scale( 173, "y" ), 
                 colWhite,
                 2,
                 0,
@@ -181,7 +179,7 @@ function sWelcome:Create( entNpc )
     local btnDisconnect = vgui.Create( "DButton", pContent )
     btnDisconnect:SetText('')
     if entNpc then
-        btnDisconnect:SetSize( 16, 16 )
+        btnDisconnect:SetSize( sWelcome.Scale( 16, "x" ), sWelcome.Scale( 16, "y" ) )
         btnDisconnect:SetPos( Base:GetWide() * .65, Base:GetTall() * .22 )
         function btnDisconnect:Paint( w, h )
             surface.SetDrawColor( colWhite )
@@ -190,15 +188,15 @@ function sWelcome:Create( entNpc )
         end
         function btnDisconnect:DoClick()
             pContent:AlphaTo( 0, 0.5 )
-            pContent:MoveTo( Base:GetX(), -pContent:GetTall() - size200, 0.8, 0, -1, function() 
+            pContent:MoveTo( Base:GetX(), -pContent:GetTall() - sWelcome.Scale( 200, "y" ), 0.8, 0, -1, function() 
                 Base:Remove()
             end )
         end
     else
-        btnDisconnect:SetSize( size160, 20 )
-        btnDisconnect:SetPos( 15, 15 )
+        btnDisconnect:SetSize( sWelcome.Scale( 160, "x" ), sWelcome.Scale( 20, "y" ) )
+        btnDisconnect:SetPos( sWelcome.Scale( 15, "x" ), sWelcome.Scale( 15, "y" ) )
         function btnDisconnect:Paint( w, h )
-            draw.SimpleTextOutlined( sWelcome:Translate( "DISCONNECT" ), "sWelcome:24:B", 1, h / 2, self:IsHovered() and colOrangeH or colOrange, 0, 1, 1, colBlack )
+            draw.SimpleTextOutlined( sWelcome:Translate( "DISCONNECT" ), sWelcome:Font( 24 ), 1, h / 2, self:IsHovered() and colOrangeH or colOrange, 0, 1, 1, colBlack )
         end
         function btnDisconnect:DoClick()
             LocalPlayer():ConCommand( 'disconnect' )
@@ -206,22 +204,22 @@ function sWelcome:Create( entNpc )
     end
 
     local pName = vgui.Create( "DTextEntry", pContent )
-    pName:SetSize( size200, 30 )
-    pName:SetPos( intMsgX + scaleThis( 250 ), intMsgY + intMsgH / 2 + 30 )
+    pName:SetSize( sWelcome.Scale( 200, "x" ), sWelcome.Scale( 30, "y" ) )
+    pName:SetPos( intMsgX + sWelcome.Scale( 250, "x" ), intMsgY + intMsgH / 2 + sWelcome.Scale( 30, "y" ) )
     pName:SetDrawLanguageID( false )
 
     local pSurname = vgui.Create( "DTextEntry", pContent )
-    pSurname:SetSize( scaleThis( 220 ), 30 )
-    pSurname:SetPos( intMsgX + size230, intMsgY + intMsgH / 2 + size100 + 13 )
+    pSurname:SetSize( sWelcome.Scale( 220, "x" ), sWelcome.Scale( 30, "y" ) )
+    pSurname:SetPos( intMsgX + sWelcome.Scale( 230, "x" ), intMsgY + intMsgH / 2 + sWelcome.Scale( 113, "y" ) )
     pSurname:SetDrawLanguageID( false )
 
     local superAngle = Angle(0, -5, 0)
     local btnStart = vgui.Create( "DButton", pContent )
-    btnStart:SetSize( size200, size100 )
+    btnStart:SetSize( sWelcome.Scale( 200, "x" ), sWelcome.Scale( 100, "y" ) )
     btnStart:SetText('')
-    btnStart.intW = size524
-    btnStart.intH = size180
-    btnStart.OnCursorEntered = function(self)
+    btnStart.intW = sWelcome.Scale( 524, "x" )
+    btnStart.intH = sWelcome.Scale( 180, "y" )
+    btnStart.OnCursorEntered = function()
         surface.PlaySound( "seefox/swelcome/hover_little.wav" )
     end
     function btnStart:Paint( w, h )
@@ -229,32 +227,32 @@ function sWelcome:Create( entNpc )
         local frameTime = FrameTime() * 10
 
         if isHovered then
-            self.intW = Lerp( frameTime, self.intW, size524 + 10 )
-            self.intH = Lerp( frameTime, self.intH, size180 + 10 )
+            self.intW = Lerp( frameTime, self.intW, sWelcome.Scale( 534, "x" ) )
+            self.intH = Lerp( frameTime, self.intH, sWelcome.Scale( 190, "y" ) )
         else
-            self.intW = Lerp( frameTime, self.intW, size524 )
-            self.intH = Lerp( frameTime, self.intH, size180 )
+            self.intW = Lerp( frameTime, self.intW, sWelcome.Scale( 524, "x" ) )
+            self.intH = Lerp( frameTime, self.intH, sWelcome.Scale( 180, "y" ) )
         end
 
         self:SetSize( self.intW, self.intH )
-        self:SetPos( intMsgX - 68, intMsgY + intMsgH - 57 )
+        self:SetPos( intMsgX - sWelcome.Scale( 68, "x" ), intMsgY + intMsgH - sWelcome.Scale( 57, "y" ) )
 
         surface.SetDrawColor( colWhite )
         surface.SetMaterial( matStart )
-        surface.DrawTexturedRect( 0, 0, w, h - 15 )
+        surface.DrawTexturedRect( 0, 0, w, h - sWelcome.Scale( 15, "y" ) )
 
         render.PushFilterMag( TEXFILTER.ANISOTROPIC )
         render.PushFilterMin( TEXFILTER.ANISOTROPIC )
 
-        local x, y = w * .4, ( h - 15 ) * .86
+        local x, y = w * .4, ( h - sWelcome.Scale( 15, "y" ) ) * .86
         local mx = Matrix()
 
-        mx:Translate(Vector(x, y))
-        mx:Rotate(superAngle)
-        mx:Translate(Vector(-x, -y))
+        mx:Translate( Vector( x, y ) )
+        mx:Rotate( superAngle )
+        mx:Translate( Vector( -x, -y ) )
 
-        cam.PushModelMatrix(mx)
-            draw.SimpleTextOutlined( entNpc and string.upper( sWelcome:Translate( "ChangeName" ) ) or sWelcome:Translate( "STARTADVENTURE" ), "sWelcome:30:B", x, y, colWhite, 1, 4, 4, colGrey )
+        cam.PushModelMatrix( mx )
+            draw.SimpleTextOutlined( entNpc and string.upper( sWelcome:Translate( "ChangeName" ) ) or sWelcome:Translate( "STARTADVENTURE" ), sWelcome:Font( 30 ), x, y, colWhite, 1, 4, 4, colGrey )
         cam.PopModelMatrix()
 
         render.PopFilterMag()
@@ -263,11 +261,11 @@ function sWelcome:Create( entNpc )
         if isHovered then
             surface.SetDrawColor( colBlackH )
             surface.SetMaterial( matStart )
-            surface.DrawTexturedRect( 0, 0, w, h - 15 )
+            surface.DrawTexturedRect( 0, 0, w, h - sWelcome.Scale( 15, "y" ) )
         end        
 
         if string.len( sWelcome.LastError ) > 0 then
-            draw.SimpleTextOutlined( sWelcome.LastError, "sWelcome:24:B", w / 2, h, colOrange, 1, 4, 1, colBlack )
+            draw.SimpleTextOutlined( sWelcome:Translate( sWelcome.LastError ), sWelcome:Font( 24 ), w / 2, h, colOrange, 1, 4, 1, colBlack )
         end
     end
     function btnStart:DoClick()
@@ -288,23 +286,21 @@ end
 net.Receive( "sWelcome:Player:OpenMenu", function()
     local boolFirstSpawn = net.ReadBool()
 
-    intCinimaticIndex = 1
+    intCinematicIndex = 1
     sWelcome.IsOpen = true
 
     local intMod = 0
-    local intModMax = 60
+    local intModMax = sWelcome.Scale( 60, "y" )
     local boolDown = true
     local intNextMod = 0
 
-    local Base = vgui.Create( "DFrame" )
+    local Base = vgui.Create( "EditablePanel" )
     Base:SetSize( scrW, scrH )
-    Base:Center()
-    Base:SetTitle('')
-    Base:SetDraggable( false )
-    Base:ShowCloseButton( false )
+    Base:CenterVertical()
+	Base:CenterHorizontal()
     Base:MakePopup()
     function Base:Paint( w, h )
-        drawBlur( self, 12 ) 
+        sWelcome.DrawBlur( self, 12 ) 
     end
 
     local intMsgW = 719 / ( scrW / scrH )
@@ -318,7 +314,7 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
     pContent:AlphaTo( 255, 1 )
     pContent:MoveTo( 0, 0, 0.8 )
     function pContent:Paint( w, h )
-        local intMsgY = 50
+        local intMsgY = sWelcome.Scale( 50, "y" )
 
         if !intNextMod || intNextMod < CurTime() then
             if boolDown then
@@ -336,25 +332,27 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
         intMsgY = intMsgY + intMod
 
         if type( sWelcome.ServerName ) == "IMaterial" then
+            local intLogoWidth = sWelcome.ServerLogo:Width()
+
             surface.SetDrawColor( colWhite )
             surface.SetMaterial( sWelcome.ServerName )
-            surface.DrawTexturedRect( intMsgX, intMsgY, intMsgW, intMsgH )
+            surface.DrawTexturedRect( Base:GetWide() / 2 - intLogoWidth / 2, intMsgY, intLogoWidth, sWelcome.ServerLogo:Height() )
         else
-            draw.SimpleText( sWelcome:Translate( "WELCOMETO" ), "sWelcome:30:B", w/2, intMsgY+12, colWhite, 1 )
+            draw.SimpleText( sWelcome:Translate( "WELCOMETO" ), sWelcome:Font( 30 ), w / 2, intMsgY + sWelcome.Scale( 12, "y" ), colWhite, 1 )
             
-            local y = intMsgY+25
-            draw.SimpleText( sWelcome.ServerName, "sWelcome:48:B_shadow", w/2, y + 4, ColorAlpha(color_black, 120), 1, TEXT_ALIGN_TOP )
-            draw.SimpleText( sWelcome.ServerName, "sWelcome:48:B", w/2, y + 4, ColorAlpha(color_black, 150), 1, TEXT_ALIGN_TOP )
-            draw.SimpleText( sWelcome.ServerName, "sWelcome:48:B", w/2, y, sWelcome.ServerNameColor, 1, TEXT_ALIGN_TOP )
+            local y = intMsgY + sWelcome.Scale( 25, "y" )
+            draw.SimpleText( sWelcome.ServerName, sWelcome:Font( 105, true ), w / 2, y + 4, ColorAlpha(color_black, 120), 1, TEXT_ALIGN_TOP )
+            draw.SimpleText( sWelcome.ServerName, sWelcome:Font( 105 ), w / 2, y + 4, ColorAlpha(color_black, 150), 1, TEXT_ALIGN_TOP )
+            draw.SimpleText( sWelcome.ServerName, sWelcome:Font( 105 ), w / 2, y, sWelcome.ServerNameColor, 1, TEXT_ALIGN_TOP )
         end
     end
 
     local btnDisconnect = vgui.Create( "DButton", Base )
-    btnDisconnect:SetSize( size160, 20 )
-    btnDisconnect:SetPos( 15, 15 )
+    btnDisconnect:SetSize( sWelcome.Scale( 160, "x" ), sWelcome.Scale( 20, "y" ) )
+    btnDisconnect:SetPos( sWelcome.Scale( 15, "x" ), sWelcome.Scale( 15, "y" ) )
     btnDisconnect:SetText('')
     function btnDisconnect:Paint( w, h )
-        draw.SimpleTextOutlined( sWelcome:Translate( "DISCONNECT" ), "sWelcome:24:B", 1, h / 2, self:IsHovered() and colOrangeH or colOrange, 0, 1, 1, colBlack )
+        draw.SimpleTextOutlined( sWelcome:Translate( "DISCONNECT" ), sWelcome:Font( 24 ), 1, h / 2, self:IsHovered() and colOrangeH or colOrange, 0, 1, 1, colBlack )
     end
     function btnDisconnect:DoClick()
         LocalPlayer():ConCommand( 'disconnect' )
@@ -362,11 +360,11 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
 
     if sWelcome.DiscordLink != "" then
         local btnDiscord = vgui.Create( "DButton", pContent )
-        btnDiscord:SetSize( scaleThis( 500 ), 80 )
+        btnDiscord:SetSize( sWelcome.Scale( 500, "x" ), sWelcome.Scale( 80, "y" ) )
         btnDiscord:SetPos( scrW / 2 - btnDiscord:GetWide() / 2, scrH / 2 - btnDiscord:GetTall() / 2 )
         btnDiscord:SetText('')
         btnDiscord.intLerpLogo = 0
-        btnDiscord.OnCursorEntered = function(self)
+        btnDiscord.OnCursorEntered = function()
             surface.PlaySound( "seefox/swelcome/click2_little.wav" )
         end
         function btnDiscord:Paint( w, h )
@@ -389,9 +387,9 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
             surface.SetDrawColor( colWhite )
             surface.SetMaterial( matDiscord )
 
-            surface.DrawTexturedRectRotated( 40 + 32, h / 2 - 5, 64, 64, self.intLerpLogo )
+            surface.DrawTexturedRectRotated( sWelcome.Scale( 72, "x" ), h / 2 - 5, sWelcome.Scale( 64, "x" ), sWelcome.Scale( 64, "y" ), self.intLerpLogo )
 
-            draw.SimpleTextOutlined( sWelcome:Translate( "JOINUS" ), "sWelcome:24:A", w / 2 + 30, h / 2 - 5, colWhite, 1, 1, 1, colBlack )    
+            draw.SimpleTextOutlined( sWelcome:Translate( "JOINUS" ), sWelcome:Font( 29 ), w / 2 + sWelcome.Scale( 30, "x" ), h / 2 - 5, colWhite, 1, 1, 1, colBlack )    
         end
         function btnDiscord:DoClick()
             surface.PlaySound( "seefox/swelcome/flash.ogg" )
@@ -402,12 +400,12 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
     end
 
     local btnNext = vgui.Create( "DButton", pContent )
-    btnNext.intW = size200
-    btnNext.intH = size100
+    btnNext.intW = sWelcome.Scale( 200, "x" )
+    btnNext.intH = sWelcome.Scale( 100, "y" )
     btnNext:SetSize( btnNext.intW, btnNext.intH )
-    btnNext:SetPos( scrW / 2 - btnNext:GetWide() / 2, scrH - btnNext:GetTall() - 50 )
+    btnNext:SetPos( scrW / 2 - btnNext:GetWide() / 2, scrH - btnNext:GetTall() - sWelcome.Scale( 50, "y" ) )
     btnNext:SetText('')
-    btnNext.OnCursorEntered = function(self)
+    btnNext.OnCursorEntered = function()
         surface.PlaySound( "seefox/swelcome/hover_little.wav" )
     end
     function btnNext:Paint( w, h )
@@ -415,21 +413,21 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
         local frameTime = FrameTime() * 10
 
         if isHovered then
-            self.intW = Lerp( frameTime, self.intW, size200 + 10 )
-            self.intH = Lerp( frameTime, self.intH, size100 + 10 )
+            self.intW = Lerp( frameTime, self.intW, sWelcome.Scale( 210, "x" ) )
+            self.intH = Lerp( frameTime, self.intH, sWelcome.Scale( 110, "y" ) )
         else
-            self.intW = Lerp( frameTime, self.intW, size200 )
-            self.intH = Lerp( frameTime, self.intH, size100 )
+            self.intW = Lerp( frameTime, self.intW, sWelcome.Scale( 200, "x" ) )
+            self.intH = Lerp( frameTime, self.intH, sWelcome.Scale( 100, "y" ) )
         end
 
         self:SetSize( self.intW, self.intH )
-        self:SetPos( pContent:GetWide() / 2 - self:GetWide() / 2, pContent:GetTall() - self:GetTall() - 50 )
+        self:SetPos( pContent:GetWide() / 2 - self:GetWide() / 2, pContent:GetTall() - self:GetTall() - sWelcome.Scale( 50, "y" ) )
 
         surface.SetDrawColor( colWhite )
         surface.SetMaterial( matNext )
         surface.DrawTexturedRect( 0, 0, w, h )
 
-        draw.SimpleTextOutlined(sWelcome:Translate( "CONTINUE" ), "sWelcome:32:B", w/2, h/2.2, colWhite, 1, 1, 1, colBlack)
+        draw.SimpleTextOutlined( sWelcome:Translate( "CONTINUE" ), sWelcome:Font( 32 ), w / 2, h / 2.2, colWhite, 1, 1, 1, colBlack )
         
         if isHovered then
             surface.SetDrawColor( colBlackH )
@@ -445,10 +443,10 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
         end
 
         pContent:AlphaTo( 0, 0.5 )
-        pContent:MoveTo( Base:GetX(), -pContent:GetTall() - size200, 0.8, 0, -1, function() 
+        pContent:MoveTo( Base:GetX(), -pContent:GetTall() - sWelcome.Scale( 200, "y" ), 0.8, 0, -1, function() 
             if boolFirstSpawn then
                 Base:Remove()
-                sWelcome:Create()
+                sWelcome.Create()
             else
                 sWelcome:Transition()
 
@@ -466,17 +464,17 @@ net.Receive( "sWelcome:Player:Register", function()
     local boolClose = net.ReadBool()
     local boolNpc = net.ReadBool()
 
-    if boolClose then
-        if sWelcome.Music != "" and !boolNpc then
-            surface.PlaySound( sWelcome.Music )
-        end
+    if not boolClose then return end
 
-        sWelcome:Transition()
-        
-        timer.Simple( 1, function()
-            if IsValid( sWelcome.BaseC ) then sWelcome.BaseC:Remove() end
-        end )
+    if sWelcome.Music != "" and !boolNpc then
+        surface.PlaySound( sWelcome.Music )
     end
+
+    sWelcome:Transition()
+    
+    timer.Simple( 1, function()
+        if IsValid( sWelcome.BaseC ) then sWelcome.BaseC:Remove() end
+    end )
 end )
 
 hook.Add( "InitPostEntity", "sWelcome:Player:Spawn", function()
@@ -484,29 +482,33 @@ hook.Add( "InitPostEntity", "sWelcome:Player:Spawn", function()
     net.SendToServer()
 end )
 
-hook.Add( "CalcView", "sWelcome:Player:CalcView", function( pPlayer, vecPos, vecAng, intFov )
+local intCinematicIndex = 1
+local vecPosCinematic = sWelcome.Cinematics[ intCinematicIndex ]['StartPos']
+local angPosCinematic = sWelcome.Cinematics[ intCinematicIndex ]['StartAngle']
+
+hook.Add( "CalcView", "sWelcome:Player:CalcView", function( pPlayer, vecPos, _, intFov )
     if !sWelcome.IsOpen then return end
 
     local frameTime = FrameTime()
     local pos = pPlayer:GetPos()
     local ang = pPlayer:GetAngles()
 
-    if sWelcome.Cinimatic[ intCinimaticIndex ] then
-        vecPosCinimatic = LerpVector( frameTime * sWelcome.Cinimatic[ intCinimaticIndex ]['Time'], vecPosCinimatic, sWelcome.Cinimatic[ intCinimaticIndex ]['EndPos'] )
-        angPosCinimatic = LerpAngle( frameTime * sWelcome.Cinimatic[ intCinimaticIndex ]['Time'], angPosCinimatic, sWelcome.Cinimatic[ intCinimaticIndex ]['EndAngle'] )
+    if sWelcome.Cinematics[ intCinematicIndex ] then
+        vecPosCinematic = LerpVector( frameTime * sWelcome.Cinematics[ intCinematicIndex ]['Time'], vecPosCinematic, sWelcome.Cinematics[ intCinematicIndex ]['EndPos'] )
+        angPosCinematic = LerpAngle( frameTime * sWelcome.Cinematics[ intCinematicIndex ]['Time'], angPosCinematic, sWelcome.Cinematics[ intCinematicIndex ]['EndAngle'] )
 
-        pos = vecPosCinimatic
-        ang = angPosCinimatic
+        pos = vecPosCinematic
+        ang = angPosCinematic
 
-        if pos:DistToSqr( sWelcome.Cinimatic[ intCinimaticIndex ]['EndPos'] ) < 100000 then
-            if !sWelcome.Cinimatic[ intCinimaticIndex + 1 ] then
-                intCinimaticIndex = 1
+        if pos:DistToSqr( sWelcome.Cinematics[ intCinematicIndex ]['EndPos'] ) < 100000 then
+            if !sWelcome.Cinematics[ intCinematicIndex + 1 ] then
+                intCinematicIndex = 1
             else
-                intCinimaticIndex = intCinimaticIndex + 1
+                intCinematicIndex = intCinematicIndex + 1
             end
 
-            vecPosCinimatic = sWelcome.Cinimatic[ intCinimaticIndex ]['StartPos']
-            angPosCinimatic = sWelcome.Cinimatic[ intCinimaticIndex ]['StartAngle']
+            vecPosCinematic = sWelcome.Cinematics[ intCinematicIndex ]['StartPos']
+            angPosCinematic = sWelcome.Cinematics[ intCinematicIndex ]['StartAngle']
         end
     end
 
@@ -523,13 +525,13 @@ end )
 hook.Add( "HUDShouldDraw", "sWelcome:Player:HideHUD", function( name )
     if !sWelcome.IsOpen then return end
 
-	if ( name == "CHudWeaponSelection" ) then return true end
-	if ( name == "CHudChat" ) then return true end
+	if name == "CHudWeaponSelection" then return true end
+	if name == "CHudChat" then return true end
 
 	return false
 end )
 
 -- NPC
 net.Receive( "sWelcome:Player:OpenNPC", function()
-    sWelcome:Create( net.ReadEntity() )
+    sWelcome.Create( net.ReadEntity() )
 end )

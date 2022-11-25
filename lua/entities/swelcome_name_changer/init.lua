@@ -5,7 +5,7 @@ AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
 function ENT:Initialize()
-    self:SetModel( "models/Barney.mdl" )
+    self:SetModel( sWelcome.ModelNPC )
     self:SetHullType( HULL_HUMAN )
     self:SetHullSizeNormal()
     self:SetNPCState( NPC_STATE_SCRIPT )
@@ -16,9 +16,7 @@ function ENT:Initialize()
     self:DropToFloor()
 end
 
-function ENT:AcceptInput( name, activator, ply )
-    if name != "Use" or !IsValid( ply ) or !ply:IsPlayer() then return end
-
+function ENT:Use( ply )
     local curTime = CurTime()
 
     if ply.NameCooldown and ply.NameCooldown > curTime then

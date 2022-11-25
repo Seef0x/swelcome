@@ -33,22 +33,24 @@ sWelcome.RestrictedName = false -- renaming should only be possible from the NPC
 
 sWelcome.CooldownNPC = 300 -- seconds of cooldown between 2 name changes
 
+sWelcome.ModelNPC = "models/barney.mdl"
+
 -- camera paths in menu background
-sWelcome.Cinimatic = {
+sWelcome.Cinematics = {
     [1] = {
         ['Time'] = 0.1,
-        ['StartPos'] = Vector( 5, -4400, 339 ),
-        ['EndPos'] = Vector( 5, -780, 339 ),
+        ['StartPos'] = Vector( -6729, -6192, 307 ),
+        ['EndPos'] = Vector( -6715, 654, 172 ),
 
         ['StartAngle'] = Angle( 0, 90, 0 ),
         ['EndAngle'] = Angle( 0, 90, 0 )
     },
     [2] = {
         ['Time'] = 0.1,
-        ['StartPos'] = Vector( 2690, 5630, 1065 ),
-        ['EndPos'] = Vector( -3388, 3780, 36 ),
+        ['StartPos'] = Vector( -290, 777, 977 ),
+        ['EndPos'] = Vector( -2875, 8708, 924 ),
 
-        ['StartAngle'] = Angle( 9, -163, 0 ),
-        ['EndAngle'] = Angle( 9, -163, 0 )
+        ['StartAngle'] = Angle( 0, 90, 0 ),
+        ['EndAngle'] = Angle( 0, 0, 0 )
     }
 }
