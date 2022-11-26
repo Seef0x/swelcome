@@ -14,4 +14,5 @@ sWelcome.Languages["es"] = {
     ['NotEnoughMoney'] = "No tienes suficiente dinero",
     ['NameChanged'] = "Te cambiaste el nombre por %s",
     ['COST'] = "COSTO ",
+    ['FORCENAME'] = "UN ADMINISTRADOR TE OBLIGÓ\nA CAMBIAR TU NOMBRE"
 }

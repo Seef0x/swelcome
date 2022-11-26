@@ -35,8 +35,8 @@ hook.Add( "CanChangeRPName", "sWelcome:Player:BlacklistedNames", function( ply, 
 end )
 
 -- Player open menu
-if !sql.TableExists( "swelcome" ) then
-	sql.Query( "CREATE TABLE IF NOT EXISTS swelcome ( player TEXT NOT NULL PRIMARY KEY, registered INTEGER );" )
+if !sql.TableExists( "swelcome_registration" ) then
+	sql.Query( "CREATE TABLE IF NOT EXISTS swelcome_registration ( player TEXT NOT NULL PRIMARY KEY, registered INTEGER );" )
 end
 
 net.Receive( "sWelcome:Player:OpenMenu", function( _, pPlayer )
@@ -44,7 +44,7 @@ net.Receive( "sWelcome:Player:OpenMenu", function( _, pPlayer )
 
     pPlayer.Welcomed = true
 
-	local sqlQuery = sql.QueryValue( "SELECT registered FROM swelcome WHERE player = " .. SQLStr( pPlayer:SteamID() ) .. " LIMIT 1" )
+	local sqlQuery = sql.QueryValue( "SELECT registered FROM swelcome_registration WHERE player = " .. SQLStr( pPlayer:SteamID() ) .. " LIMIT 1" )
     pPlayer.Registered = tobool( sqlQuery )
 
     net.Start( "sWelcome:Player:OpenMenu" )
@@ -91,29 +91,87 @@ net.Receive( "sWelcome:Player:Register", function( _, pPlayer )
     end
     
     if entNpc then
-        if !pPlayer:canAfford( sWelcome.NameChangeCost ) then
-            sWelcome.SendErr( pPlayer, 'NotEnoughMoney', false )
-            return
+        if sWelcome.NameChangeCost > 0 then
+            if !pPlayer:canAfford( sWelcome.NameChangeCost ) then
+                sWelcome.SendErr( pPlayer, 'NotEnoughMoney', false )
+                return
+            end
+
+            pPlayer:addMoney( sWelcome.NameChangeCost * -1 )
         end
 
         pPlayer.NameCooldown = CurTime() + sWelcome.CooldownNPC
         
-        pPlayer:addMoney( sWelcome.NameChangeCost * -1 )
-
         DarkRP.notify( pPlayer, 0, 4, sWelcome:Translate( 'NameChanged' ):format( DarkRP.formatMoney( sWelcome.NameChangeCost ) ) )
     else
-	    sql.Query( "REPLACE INTO swelcome ( player, registered ) VALUES ( " .. SQLStr( pPlayer:SteamID() ) .. ", 1 )" )
+	    sql.Query( "REPLACE INTO swelcome_registration ( player, registered ) VALUES ( " .. SQLStr( pPlayer:SteamID() ) .. ", 1 )" )
 
         pPlayer.Registered = true
     end
 
     pPlayer:setRPName( strFullName )
 
-    sWelcome.SendErr( pPlayer, "", true, IsValid( entNpc ) )
+    sWelcome.SendErr( pPlayer, "", true, entNpc != pPlayer )
 end )
 
+-- PVS
 hook.Add( "SetupPlayerVisibility", "sWelcome:Player:Cinematics", function( ply, viewEntity )
     for i = 1, #sWelcome.Cinematics do
         AddOriginToPVS( sWelcome.Cinematics[ i ]['StartPos'] )
     end
+end )
+
+-- NPCs
+function sWelcome.SaveNPCs( ply )
+    if IsValid( ply ) and !ply:IsSuperAdmin() then return end
+
+    local tblNpcs = {}
+
+    for _, v in ipairs( ents.FindByClass( "swelcome_name_changer" ) ) do
+        table.insert( tblNpcs, { pos = v:GetPos(), ang = v:GetAngles(), map = game.GetMap() } )
+    end
+
+    file.Write( "swelcome_npcs.json", util.TableToJSON( tblNpcs ) )
+
+    sWelcome.LoadNPCs() -- respawn npcs as world entity
+end
+concommand.Add("swelcome_save_npcs", sWelcome.SaveNPCs)
+
+function sWelcome.LoadNPCs( ply )
+    if IsValid( ply ) and !ply:IsSuperAdmin() then return end
+
+    for _, v in ipairs( ents.FindByClass( "swelcome_name_changer" ) ) do
+        v:Remove()
+    end
+
+    local tblNpcs = util.JSONToTable( file.Read( "swelcome_npcs.json" ) )
+
+    for _, v in ipairs( tblNpcs ) do
+        if v.map != game.GetMap() then continue end
+
+        local ent = ents.Create( "swelcome_name_changer" )
+        ent:SetPos( v.pos )
+        ent:SetAngles( v.ang )
+        ent:Spawn()
+        ent:Activate()
+    end
+end
+hook.Add("InitPostEntity", "sWelcome:LoadNPCs", sWelcome.LoadNPCs)
+hook.Add("PostCleanupMap", "sWelcome:LoadNPCs", sWelcome.LoadNPCs)
+concommand.Add("swelcome_spawn_npcs", sWelcome.LoadNPCs)
+
+-- NAME HISTORY
+if !sql.TableExists( "swelcome_history" ) then
+	sql.Query( "CREATE TABLE IF NOT EXISTS swelcome_history ( player TEXT NOT NULL PRIMARY KEY, history TEXT );" )
+end
+
+hook.Add( "DarkRPVarChanged", "sWelcome:NameHistory", function( pPlayer, var, _, new )
+    if var != "rpname" then return end
+
+    local sqlQuery = sql.QueryValue( "SELECT history FROM swelcome_history WHERE player = " .. SQLStr( pPlayer:SteamID() ) .. " LIMIT 1" )
+    local tblHistory = sqlQuery and util.JSONToTable( sqlQuery ) or {}
+
+    table.insert( tblHistory, { name = new, timestamp = os.date() })
+
+    sql.Query( "REPLACE INTO swelcome_history ( player, history ) VALUES ( " .. SQLStr( pPlayer:SteamID() ) .. ", " .. SQLStr( util.TableToJSON( tblHistory ) ) .. " )" )
 end )

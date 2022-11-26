@@ -133,8 +133,14 @@ function sWelcome.Create( entNpc )
         surface.DrawTexturedRect( intMsgX, intMsgY, intMsgW, intMsgH )
 
         if sWelcome.ServerLogo then
-            surface.SetMaterial( sWelcome.ServerLogo )
-            surface.DrawTexturedRect( w*.5, h*.25, sWelcome.Scale( 120, "x" ), sWelcome.Scale( 120, "y" ) )
+            if entNpc == LocalPlayer() then
+                local strText = string.Split( sWelcome:Translate( "FORCENAME" ), "\n" ) 
+                draw.SimpleTextOutlined( strText[1], sWelcome:Font( 28 ), w / 2 + 60, sWelcome.Scale( 340, "y" ), colOrange, 1, 4, 1, colBlack )
+                draw.SimpleTextOutlined( strText[2], sWelcome:Font( 28 ), w / 2 + 60, sWelcome.Scale( 365, "y" ), colOrange, 1, 4, 1, colBlack )
+            else
+                surface.SetMaterial( sWelcome.ServerLogo )
+                surface.DrawTexturedRect( w*.5, h*.25, sWelcome.Scale( 120, "x" ), sWelcome.Scale( 120, "y" ) )
+            end
         end
 
         draw.SimpleTextOutlined(
@@ -176,30 +182,32 @@ function sWelcome.Create( entNpc )
         end
     end
 
-    local btnDisconnect = vgui.Create( "DButton", pContent )
-    btnDisconnect:SetText('')
-    if entNpc then
-        btnDisconnect:SetSize( sWelcome.Scale( 16, "x" ), sWelcome.Scale( 16, "y" ) )
-        btnDisconnect:SetPos( Base:GetWide() * .65, Base:GetTall() * .22 )
-        function btnDisconnect:Paint( w, h )
-            surface.SetDrawColor( colWhite )
-            surface.SetMaterial( matCross )
-            surface.DrawTexturedRect( 0, 0, w, h )
-        end
-        function btnDisconnect:DoClick()
-            pContent:AlphaTo( 0, 0.5 )
-            pContent:MoveTo( Base:GetX(), -pContent:GetTall() - sWelcome.Scale( 200, "y" ), 0.8, 0, -1, function() 
-                Base:Remove()
-            end )
-        end
-    else
-        btnDisconnect:SetSize( sWelcome.Scale( 160, "x" ), sWelcome.Scale( 20, "y" ) )
-        btnDisconnect:SetPos( sWelcome.Scale( 15, "x" ), sWelcome.Scale( 15, "y" ) )
-        function btnDisconnect:Paint( w, h )
-            draw.SimpleTextOutlined( sWelcome:Translate( "DISCONNECT" ), sWelcome:Font( 24 ), 1, h / 2, self:IsHovered() and colOrangeH or colOrange, 0, 1, 1, colBlack )
-        end
-        function btnDisconnect:DoClick()
-            LocalPlayer():ConCommand( 'disconnect' )
+    if entNpc != LocalPlayer() then
+        local btnDisconnect = vgui.Create( "DButton", pContent )
+        btnDisconnect:SetText('')
+        if entNpc then
+            btnDisconnect:SetSize( sWelcome.Scale( 16, "x" ), sWelcome.Scale( 16, "y" ) )
+            btnDisconnect:SetPos( Base:GetWide() * .65, Base:GetTall() * .22 )
+            function btnDisconnect:Paint( w, h )
+                surface.SetDrawColor( colWhite )
+                surface.SetMaterial( matCross )
+                surface.DrawTexturedRect( 0, 0, w, h )
+            end
+            function btnDisconnect:DoClick()
+                pContent:AlphaTo( 0, 0.5 )
+                pContent:MoveTo( Base:GetX(), -pContent:GetTall() - sWelcome.Scale( 200, "y" ), 0.8, 0, -1, function() 
+                    Base:Remove()
+                end )
+            end
+        else
+            btnDisconnect:SetSize( sWelcome.Scale( 160, "x" ), sWelcome.Scale( 20, "y" ) )
+            btnDisconnect:SetPos( sWelcome.Scale( 15, "x" ), sWelcome.Scale( 15, "y" ) )
+            function btnDisconnect:Paint( w, h )
+                draw.SimpleTextOutlined( sWelcome:Translate( "DISCONNECT" ), sWelcome:Font( 24 ), 1, h / 2, self:IsHovered() and colOrangeH or colOrange, 0, 1, 1, colBlack )
+            end
+            function btnDisconnect:DoClick()
+                LocalPlayer():ConCommand( 'disconnect' )
+            end
         end
     end
 
@@ -274,7 +282,7 @@ function sWelcome.Create( entNpc )
         net.Start( "sWelcome:Player:Register" )
         net.WriteString( pName:GetValue() )
         net.WriteString( pSurname:GetValue() )
-        if entNpc then
+        if entNpc != LocalPlayer() then
             net.WriteEntity( entNpc )
         end
         net.SendToServer()
