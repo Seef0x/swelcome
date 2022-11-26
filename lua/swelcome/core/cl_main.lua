@@ -135,8 +135,8 @@ function sWelcome.Create( entNpc )
         if sWelcome.ServerLogo then
             if entNpc == LocalPlayer() then
                 local strText = string.Split( sWelcome:Translate( "FORCENAME" ), "\n" ) 
-                draw.SimpleTextOutlined( strText[1], sWelcome:Font( 28 ), w / 2 + 60, sWelcome.Scale( 340, "y" ), colOrange, 1, 4, 1, colBlack )
-                draw.SimpleTextOutlined( strText[2], sWelcome:Font( 28 ), w / 2 + 60, sWelcome.Scale( 365, "y" ), colOrange, 1, 4, 1, colBlack )
+                draw.SimpleTextOutlined( strText[1], sWelcome:Font( 28 ), w / 2 + sWelcome.Scale( 60, "x" ), sWelcome.Scale( 340, "y" ), colOrange, 1, 4, 1, colBlack )
+                draw.SimpleTextOutlined( strText[2], sWelcome:Font( 28 ), w / 2 + sWelcome.Scale( 60, "x" ), sWelcome.Scale( 365, "y" ), colOrange, 1, 4, 1, colBlack )
             else
                 surface.SetMaterial( sWelcome.ServerLogo )
                 surface.DrawTexturedRect( w*.5, h*.25, sWelcome.Scale( 120, "x" ), sWelcome.Scale( 120, "y" ) )

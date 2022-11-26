@@ -32,7 +32,7 @@ local function NameHistory( ply, arg )
 
     ply:ChatPrint( "Name history of " .. target:Nick() )
 
-    for k, v in ipairs( util.JSONToTable( sqlQuery ) ) do
+    for _, v in ipairs( util.JSONToTable( sqlQuery ) ) do
         ply:ChatPrint( v.name .. " - " .. v.timestamp )
     end
 end
