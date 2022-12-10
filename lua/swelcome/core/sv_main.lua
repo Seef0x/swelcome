@@ -35,7 +35,7 @@ hook.Add( "CanChangeRPName", "sWelcome:Player:BlacklistedNames", function( ply, 
 end )
 
 -- Global notification
-if sWelcome.GlobalNotification then
+if !sWelcome.GlobalNotification then
     local strPhrase = DarkRP.getPhrase( "rpname_changed", "", "" )
     
     hook.Add( "onNotify", "sWelcome:Player:GlobalNotification", function( _, _, _, msg )
@@ -84,8 +84,8 @@ net.Receive( "sWelcome:Player:Register", function( _, pPlayer )
     local boolIsSCP = !entNpc and sWelcome.SCP
 
     if !boolIsSCP and sWelcome.Caligraphy then
-        strName = string.lower( string.gsub( strName, "%a", string.upper, 1 ) )
-        strSurname = string.lower( string.gsub( strSurname, "%a", string.upper, 1 ) )
+        strName = strName:lower():gsub( "%a", string.upper, 1 )
+        strSurname = strSurname:lower():gsub( "%a", string.upper, 1 )
     end
 
     local strFullName = strName .. ( boolIsSCP and "" or " " ) .. strSurname

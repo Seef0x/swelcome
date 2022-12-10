@@ -50,7 +50,7 @@ sWelcome.Caligraphy = true -- force good caligraphy
 
 sWelcome.GlobalNotification = true -- notify all players when a name is changed
 
-sWelcome.SCP = true -- class-d name creation
+sWelcome.SCP = false -- class-d name creation
 
 sWelcome.Actions = function() -- lua actions after welcomed
     -- RunConsoleCommand("sreward_menu")
