@@ -35,6 +35,27 @@ sWelcome.CooldownNPC = 300 -- seconds of cooldown between 2 name changes
 
 sWelcome.ModelNPC = "models/barney.mdl"
 
+sWelcome.MOTD = [[
+    RULES
+    ——————————————————————
+    ・ Arrive on time for class.
+    ・ Raise your hand to speak or volunteer.
+    ・ Follow the dress code of the school.
+    ・ Do not cheat or copy other people's work.
+    ・ Complete all assignments.
+    ・ Respect everyone in the class.
+]]
+
+sWelcome.Caligraphy = true -- force good caligraphy
+
+sWelcome.GlobalNotification = true -- notify all players when a name is changed
+
+sWelcome.SCP = true -- class-d name creation
+
+sWelcome.Actions = function() -- lua actions after welcomed
+    -- RunConsoleCommand("sreward_menu")
+end
+
 -- camera paths in menu background
 sWelcome.Cinematics = {
     [1] = {

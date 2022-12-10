@@ -1,7 +1,7 @@
 local function ForceName( ply, arg )
     local target = DarkRP.findPlayer( arg )
 
-    if not target then
+    if !target then
         DarkRP.notify( ply, 1, 4, DarkRP.getPhrase( "could_not_find", tostring( arg ) ) )
         return
     end
@@ -18,14 +18,14 @@ DarkRP.definePrivilegedChatCommand( "forcename", "SWelcome_ForceName", ForceName
 local function NameHistory( ply, arg )
     local target = DarkRP.findPlayer( arg )
 
-    if not target then
+    if !target then
         DarkRP.notify( ply, 1, 4, DarkRP.getPhrase( "could_not_find", tostring( arg ) ) )
         return
     end
 
     local sqlQuery = sql.QueryValue( "SELECT history FROM swelcome_history WHERE player = " .. SQLStr( target:SteamID() ) .. " LIMIT 1" )
 
-    if not sqlQuery then
+    if !sqlQuery then
         ply:ChatPrint( "No history" )
         return
     end

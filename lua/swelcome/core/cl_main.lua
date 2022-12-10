@@ -24,6 +24,8 @@ local colOrange = Color( 255, 184, 176 )
 local colOrangeH = Color( 255, 184, 176, 200 )
 
 -- Fonts
+surface.CreateFont( 'sWelcome:MOTD', { font = 'Roboto', size = sWelcome.Scale( 20, "y" ), weight = 550, antialias = true } )
+
 local cachedFonts = {}
 
 function sWelcome:Font( intSize, boolShadow )
@@ -100,6 +102,32 @@ function sWelcome:Transition()
     self.pTransition = Base
 end
 
+function sWelcome:DrawMOTD( w, h )
+    surface.SetFont( "sWelcome:MOTD" )
+    local intTextHeight = select( 2, surface.GetTextSize( "EXAMPLE" ) )
+    local intMaxWidth = 0
+    local strSplittedText = string.Split( self.MOTD, "\n" )
+
+    for _, v in ipairs( strSplittedText ) do
+        local intTextSize = surface.GetTextSize( v )
+
+        if intMaxWidth < intTextSize then
+            intMaxWidth = intTextSize
+        end
+    end
+
+    local intW = intMaxWidth + self.Scale( 20, "x" )
+    local intH = #strSplittedText * intTextHeight + self.Scale( 20, "x" )
+    local intX = w - intW - self.Scale( 15, "x" )
+    local intY = self.Scale( 15, "y" )
+
+    surface.SetDrawColor( 0, 0, 0, 140 )
+    surface.DrawRect( intX, intY, intW, intH )
+    surface.DrawOutlinedRect( intX, intY, intW, intH )
+
+    draw.DrawText( self.MOTD, "sWelcome:MOTD", intX, intY + self.Scale( 20, "y" ), colWhite)
+end
+
 function sWelcome.Create( entNpc )
     local Base = vgui.Create( "EditablePanel" )
     Base:SetSize( scrW, scrH )
@@ -109,6 +137,8 @@ function sWelcome.Create( entNpc )
     function Base:Paint( w, h )
         if !entNpc then
             sWelcome.DrawBlur( self, 12 )
+            
+            sWelcome:DrawMOTD( w, h )
         end
     end
     function Base:OnRemove()
@@ -132,40 +162,54 @@ function sWelcome.Create( entNpc )
         surface.SetMaterial( matBg )
         surface.DrawTexturedRect( intMsgX, intMsgY, intMsgW, intMsgH )
 
-        if sWelcome.ServerLogo then
-            if entNpc == LocalPlayer() then
-                local strText = string.Split( sWelcome:Translate( "FORCENAME" ), "\n" ) 
-                draw.SimpleTextOutlined( strText[1], sWelcome:Font( 28 ), w / 2 + sWelcome.Scale( 60, "x" ), sWelcome.Scale( 340, "y" ), colOrange, 1, 4, 1, colBlack )
-                draw.SimpleTextOutlined( strText[2], sWelcome:Font( 28 ), w / 2 + sWelcome.Scale( 60, "x" ), sWelcome.Scale( 365, "y" ), colOrange, 1, 4, 1, colBlack )
-            else
+        if entNpc == LocalPlayer() then
+            local strText = string.Split( sWelcome:Translate( "FORCENAME" ), "\n" ) 
+            draw.SimpleTextOutlined( strText[1], sWelcome:Font( 28 ), w / 2 + sWelcome.Scale( 60, "x" ), sWelcome.Scale( 340, "y" ), colOrange, 1, 4, 1, colBlack )
+            draw.SimpleTextOutlined( strText[2], sWelcome:Font( 28 ), w / 2 + sWelcome.Scale( 60, "x" ), sWelcome.Scale( 365, "y" ), colOrange, 1, 4, 1, colBlack )
+        else
+            if sWelcome.ServerLogo then
                 surface.SetMaterial( sWelcome.ServerLogo )
                 surface.DrawTexturedRect( w*.5, h*.25, sWelcome.Scale( 120, "x" ), sWelcome.Scale( 120, "y" ) )
             end
         end
 
-        draw.SimpleTextOutlined(
-            sWelcome:Translate( "NAME" ) .. ":",
-            sWelcome:Font( 24 ),
-            intMsgX + sWelcome.Scale( 230, "x" ),
-            intMsgY + intMsgH / 2 + sWelcome.Scale( 28, "y" ),
-            colWhite,
-            2,
-            0,
-            1,
-            colBlack
-        )
+        if !entNpc and sWelcome.SCP then
+            draw.SimpleTextOutlined(
+                sWelcome:Translate( "NUMBER" ) .. ":",
+                sWelcome:Font( 24 ),
+                intMsgX + sWelcome.Scale( 230, "x" ),
+                intMsgY + intMsgH / 2 + sWelcome.Scale( 28, "y" ),
+                colWhite,
+                2,
+                0,
+                1,
+                colBlack
+            )
+        else
+            draw.SimpleTextOutlined(
+                sWelcome:Translate( "NAME" ) .. ":",
+                sWelcome:Font( 24 ),
+                intMsgX + sWelcome.Scale( 230, "x" ),
+                intMsgY + intMsgH / 2 + sWelcome.Scale( 28, "y" ),
+                colWhite,
+                2,
+                0,
+                1,
+                colBlack
+            )
 
-        draw.SimpleTextOutlined(
-            sWelcome:Translate( "SURNAME" ) .. ":",
-            sWelcome:Font( 24 ),
-            intMsgX + sWelcome.Scale( 210, "x" ),
-            intMsgY + intMsgH / 2 + sWelcome.Scale( 113, "y" ),
-            colWhite,
-            2,
-            0,
-            1,
-            colBlack
-        )
+            draw.SimpleTextOutlined(
+                sWelcome:Translate( "SURNAME" ) .. ":",
+                sWelcome:Font( 24 ),
+                intMsgX + sWelcome.Scale( 210, "x" ),
+                intMsgY + intMsgH / 2 + sWelcome.Scale( 113, "y" ),
+                colWhite,
+                2,
+                0,
+                1,
+                colBlack
+            )
+        end
 
         if entNpc and sWelcome.NameChangeCost > 0 then
             draw.SimpleTextOutlined( 
@@ -220,7 +264,15 @@ function sWelcome.Create( entNpc )
     pSurname:SetSize( sWelcome.Scale( 220, "x" ), sWelcome.Scale( 30, "y" ) )
     pSurname:SetPos( intMsgX + sWelcome.Scale( 230, "x" ), intMsgY + intMsgH / 2 + sWelcome.Scale( 113, "y" ) )
     pSurname:SetDrawLanguageID( false )
-
+    if !entNpc and sWelcome.SCP then
+        pName:SetEditable(false)
+        pName:SetValue("D-")
+        pSurname:SetNumeric(true)
+        function pSurname:AllowInput()
+            if string.len(self:GetValue()) >= 4 then return true end
+        end
+    end
+    
     local superAngle = Angle(0, -5, 0)
     local btnStart = vgui.Create( "DButton", pContent )
     btnStart:SetSize( sWelcome.Scale( 200, "x" ), sWelcome.Scale( 100, "y" ) )
@@ -308,7 +360,9 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
 	Base:CenterHorizontal()
     Base:MakePopup()
     function Base:Paint( w, h )
-        sWelcome.DrawBlur( self, 12 ) 
+        sWelcome.DrawBlur( self, 12 )
+
+        sWelcome:DrawMOTD( w, h )
     end
 
     local intMsgW = 719 / ( scrW / scrH )
@@ -461,6 +515,7 @@ net.Receive( "sWelcome:Player:OpenMenu", function()
                 timer.Simple( 1, function()
                     sWelcome.IsOpen = false
                     if IsValid( Base ) then Base:Remove() end
+                    sWelcome.Actions()
                 end )
             end
         end )
@@ -472,7 +527,7 @@ net.Receive( "sWelcome:Player:Register", function()
     local boolClose = net.ReadBool()
     local boolNpc = net.ReadBool()
 
-    if not boolClose then return end
+    if !boolClose then return end
 
     if sWelcome.Music != "" and !boolNpc then
         surface.PlaySound( sWelcome.Music )

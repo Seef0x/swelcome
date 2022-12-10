@@ -34,6 +34,17 @@ hook.Add( "CanChangeRPName", "sWelcome:Player:BlacklistedNames", function( ply, 
     end
 end )
 
+-- Global notification
+if sWelcome.GlobalNotification then
+    local strPhrase = DarkRP.getPhrase( "rpname_changed", "", "" )
+    
+    hook.Add( "onNotify", "sWelcome:Player:GlobalNotification", function( _, _, _, msg )
+        if string.find( msg, strPhrase ) then
+            return false
+        end
+    end )
+end
+
 -- Player open menu
 if !sql.TableExists( "swelcome_registration" ) then
 	sql.Query( "CREATE TABLE IF NOT EXISTS swelcome_registration ( player TEXT NOT NULL PRIMARY KEY, registered INTEGER );" )
@@ -53,6 +64,7 @@ net.Receive( "sWelcome:Player:OpenMenu", function( _, pPlayer )
 end )
 
 -- Player register
+local strIllegalChars = DarkRP.getPhrase( "illegal_characters" )
 net.Receive( "sWelcome:Player:Register", function( _, pPlayer )
     if sWelcome.NetCooldown and sWelcome.NetCooldown > CurTime() then return end
 
@@ -69,10 +81,18 @@ net.Receive( "sWelcome:Player:Register", function( _, pPlayer )
         if pPlayer.Registered then return end
     end
 
-    local strFullName = strName .. " " .. strSurname
+    local boolIsSCP = !entNpc and sWelcome.SCP
+
+    if !boolIsSCP and sWelcome.Caligraphy then
+        strName = string.lower( string.gsub( strName, "%a", string.upper, 1 ) )
+        strSurname = string.lower( string.gsub( strSurname, "%a", string.upper, 1 ) )
+    end
+
+    local strFullName = strName .. ( boolIsSCP and "" or " " ) .. strSurname
     strFullName = string.match( strFullName, "^%s*(.*%S)" )
 
-    if !strFullName || string.len( strFullName ) < 7 then return end
+    if !strFullName || string.len( strFullName ) < 6 then return end
+    if boolIsSCP and ( !string.find( strFullName, "D%-%d%d%d%d" ) or string.len( strFullName ) > 6 ) then return end
 
     local boolAlreayTaken = false 
     DarkRP.retrieveRPNames( strFullName, function( bool )
@@ -86,8 +106,11 @@ net.Receive( "sWelcome:Player:Register", function( _, pPlayer )
 
     local canChangeName, reason = hook.Run( "CanChangeRPName", pPlayer, strFullName )
     if canChangeName == false then
-        sWelcome.SendErr( pPlayer, reason != "" and reason or DarkRP.getPhrase( "unable", "RPname", "" ), false )
-        return
+        if reason == strIllegalChars and boolIsSCP then -- good chance that we can do otherwise
+        else
+            sWelcome.SendErr( pPlayer, reason != "" and reason or DarkRP.getPhrase( "unable", "RPname", "" ), false )
+            return
+        end
     end
     
     if entNpc then
