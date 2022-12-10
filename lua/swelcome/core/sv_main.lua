@@ -66,9 +66,9 @@ end )
 -- Player register
 local strIllegalChars = DarkRP.getPhrase( "illegal_characters" )
 net.Receive( "sWelcome:Player:Register", function( _, pPlayer )
-    if sWelcome.NetCooldown and sWelcome.NetCooldown > CurTime() then return end
+    if pPlayer.SWNetCooldown and pPlayer.SWNetCooldown > CurTime() then return end
 
-    sWelcome.NetCooldown = CurTime() + 1
+    pPlayer.SWNetCooldown = CurTime() + 1
 
     local strName = net.ReadString()
     local strSurname = net.ReadString()
