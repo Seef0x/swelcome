@@ -2,7 +2,7 @@
 
 SWelcome is an easy to use welcome menu with an uncommon and cartoony design
 
-![Preview video](https://youtu.be/BdQ22KL4RfY)
+[Preview video](https://youtu.be/BdQ22KL4RfY)
 
 # SWelcome 👋
 ### How does it work ? 😲
