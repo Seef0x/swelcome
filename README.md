@@ -1,6 +1,9 @@
 ![Preview image](https://github.com/Seef0x/swelcome/blob/main/listing_header.png?raw=true)
 
 SWelcome is an easy to use welcome menu with an uncommon and cartoony design
+
+![Preview video](https://youtu.be/BdQ22KL4RfY)
+
 # SWelcome 👋
 ### How does it work ? 😲
 SWelcome adds a welcome and roleplay name menu. Whenever someone joins your server for the first time, they are to enter one.
